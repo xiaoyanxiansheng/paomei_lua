@@ -30,29 +30,33 @@ function MainScene:addUi()
     -- 加入延时等待
     self:addDelayUI()
     -- 加入回合信息
-    self:addRoundInfoUI()
+    -- self:addRoundInfoUI()
     -- 加入技能描述
     self:addSkillDiscription()
+    -- 加入当前行动玩家id
+    self:addActionFigureNum()
 end
 function MainScene:addSkillDiscription()
     self.m_discription = UIHurt.new()
-    self.m_discription:setAnchorPoint(0.5,0.5)
-    self.m_discription:setPosition(display.cx,display.cy)
+    self.m_discription:setPosition(display.cx,display.cy/2)
     self:addChild(self.m_discription)
-    
-    -- 
-    self.m_figureNumUI = cc.ui.UILabel.new({
-            size = 24,
-            color = cc.c3b(255,255,250)
-        }):pos(250,50):addTo(self,10)
+end
+function MainScene:addActionFigureNum()
+    self.m_actionFigureNum = cc.ui.UILabel.new({
+        size = 24,
+        color = cc.c3b(0,67,67)
+    }):pos(display.cx,display.cy/2):addTo(self,10)
+    self.m_actionFigureNum:setAnchorPoint(0.5,0.5)
 end
 function MainScene:addOprateUI()
     cc.uiloader:load("ccs/Layer_bg.csb"):addTo(self)
 
-    -- button
-    local layer_oprate = cc.uiloader:load("ccs/Layer_optate.csb"):addTo(self,2)
-    local indexList = {10,11,12,13,14}
+    local layerMain_csb = cc.uiloader:load("ccs/Layer_mainscene.csb"):addTo(self)
 
+    -- button
+    -- local layer_oprate = cc.uiloader:load("ccs/Layer_optate.csb"):addTo(self,2)
+    local indexList = {22,24,23}
+    
     -- label
     local labelDiscreption = {"未托管","","","",""}
     local labelList = {}
@@ -60,7 +64,7 @@ function MainScene:addOprateUI()
     for key, var in pairs(indexList) do
         
             -- button
-            local node = cc.uiloader:seekNodeByTag(layer_oprate,var)
+        local node = cc.uiloader:seekNodeByTag(layerMain_csb,var)
             -- 可以更换背景图片
             -- node:loadTextures("img/xue_back.png","img/xue_back.png","img/xue_back.png")
             node:setTag(key)
@@ -70,9 +74,9 @@ function MainScene:addOprateUI()
             -- label
             local label = cc.ui.UILabel.new({
                 text = labelDiscreption[key],
-                size = 24,
-                color = cc.c3b(200,80,50)
-            }):pos(node:getPositionX(),node:getPositionY()):addTo(self,10)
+                size = 18,
+            color = cc.c3b(0,67,67)
+            }):pos(node:getPositionX(),node:getPositionY()):addTo(self,15)
             label:setAnchorPoint(0.5,0.5)
             self:addSkillLabelList(label)
             
@@ -82,10 +86,14 @@ function MainScene:addOprateUI()
             node:setVisible(true)
         end
     end
+    
+    -- 回合信息
+    self.m_roundInfo_label = cc.uiloader:seekNodeByTag(layerMain_csb,126)
 end
 function MainScene:addDelayUI()
     self.m_delayTime_label = cc.ui.UILabel.new({
-        fontSize = 32
+        fontSize = 32,
+        color = cc.c3b(0,67,67)
     }):pos(display.cx,display.cy):addTo(self,2)
     self.m_delayTime_label:setAnchorPoint(0.5,0.5)
     self:hideDelayTimeLabel()
@@ -171,8 +179,8 @@ end
 function MainScene:getDiscriptionUI()
     return self.m_discription
 end
-function MainScene:setFigureNumUI(param)
-    self.m_figureNumUI:setString("figureId= "..param[DATAFLOW.figureNum])
+function MainScene:setActionFigureNum(str)
+    self.m_actionFigureNum:setString(str)
 end
 function MainScene:onEnter()
 end

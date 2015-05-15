@@ -47,7 +47,7 @@ function ReportMaker:makeAttackerData(attacker,buffData)
 		table.insert(tmp.state,bd)
 	end
 	for i = 1,#attacker.ControlBuffList do
-		bd[1] = attacker.ControlBuffList[i]:getType()
+		bd[1] = attacker.ControlBuffList[i].fileId
 		bd[2] = 0
 	end
 	if self.reportData[#self.reportData].attacker == nil then
@@ -113,7 +113,7 @@ end
 		}	
 	}
 ]]
-function ReportMaker:currentFighter(fighter,count,isManipulate,attackers,defenders)
+function ReportMaker:makeCurrentFighter(fighter,isManipulate,count,attackers,defenders)
 	if fighter == nil then
 		return nil
 	end

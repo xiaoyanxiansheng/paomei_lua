@@ -3,6 +3,7 @@ local Fighter = require("src/app/gamelogic/Fighter")
 local ReportMaker = require("src/app/gamelogic/ReportMaker")
 local DOT = require("src/app/gamelogic/Dot")
 local AttrBuff = require("src/app/gamelogic/AttrBuff")
+local FighterGroup = require("src/app/gamelogic/FighterGroup")
 local SkillDefManager = DataManager.getManager("SkillDefManager")
 local BattleInfo = class("BattleInfo")
 local MAX_ROUND = 20
@@ -146,8 +147,8 @@ end,
 end
 }
 function BattleInfo:ctor()
-	self.attackList = {}
-	self.defendList = {}
+	self.attackGroup = FighterGroup.new(true)
+	self.defendGroup = FighterGroup.new(false)
 	--行动序列
 	self.actionList = {}
 	self.round_count = 0
@@ -174,14 +175,14 @@ function BattleInfo:initInfo(attacker,defender)
 	for i = 1,#data do
 		if data[i].sideType == 1 then
 			--初始化攻击者
-			table.insert(self.attackList,Fighter.new(data[i]))
+			self.attackGroup:addFighter(Fighter.new(data[i],self.attackGroup))
 		else
 			--初始化防御者
-			table.insert(self.defendList,Fighter.new(data[i]))
+			self.defendGroup:addFighter(Fighter.new(data[i],self.defendGroup))
 		end
 	end
 	--生成战报信息
-	self.report:beginFighter(self.attackList,self.defendList)
+	self.report:beginFighter(self.attackGroup:getFighters(),self.defendGroup:getFighters())
 end
 
 function BattleInfo:startBattle()
@@ -242,8 +243,8 @@ end
 	下一回合开始
 ]]
 function BattleInfo:nextRound()
-	self:insertToActionList(self.attackList)
-	self:insertToActionList(self.defendList)
+	self:insertToActionList(self.attackGroup:getFighters())
+	self:insertToActionList(self.defendGroup:getFighters())
 	self.round_count = self.round_count + 1
 	self:sortActionListBySped()
 end
@@ -258,11 +259,11 @@ function BattleInfo:isGameOver()
 		end
 		return survivor
 	end
-	local result = hasSurvivor(self.attackList)
+	local result = hasSurvivor(self.attackGroup:getFighters())
 	if result == 0 then
 		return constData.DEFENDER_WIN
 	end
-	result = hasSurvivor(self.defendList)
+	result = hasSurvivor(self.defendGroup:getFighters())
 	if result == 0 then
 		return constData.ATTACKER_WIN
 	end
@@ -313,17 +314,17 @@ end
 ]]
 function BattleInfo:getEnemyListByAttacker(attacker) 
 	if attacker.sideType == constData.LEFTSIDE then
-		return self:getAliveFighterInList(self.defendList)
+		return self:getAliveFighterInList(self.defendGroup:getFighters())
 	elseif attacker.sideType == constData.RIGHTSIDE then
-		return self:getAliveFighterInList(self.attackList)
+		return self:getAliveFighterInList(self.attackGroup:getFighters())
 	end
 end
 
 function BattleInfo:getFriendListByAttacker(attacker)
 	if attacker.sideType == constData.LEFTSIDE then
-		return self:getAliveFighterInList(self.attackList)
+		return self:getAliveFighterInList(self.attackGroup:getFighters())
 	elseif attacker.sideType == constData.RIGHTSIDE then
-		return self:getAliveFighterInList(self.defendList)
+		return self:getAliveFighterInList(self.defendGroup:getFighters())
 	end
 end
 
@@ -401,15 +402,17 @@ function BattleInfo:fetchReport(flag,data)
 	else
 		self.isAuto = false
 	end
+
+	local actFighter = self.actionList[#self.actionList]
 	--当前是手动战斗
-	if self.isAuto == false 
-		--操作方是玩家
-		and self.actionList[#self.actionList].sideType == PLAYER 
-		--并且当前没有目标
-		and self.actionList[#self.actionList]:getTarget() == nil then
-		--则没有战报产生
-		return nil
-	end
+	-- if self.isAuto == false 
+	-- 	--当前所属组可以操作
+	-- 	and actFighter.group:canManipulate()
+	-- 	--并且当前没有目标
+	-- 	and actFighter:getTarget() == nil then
+	-- 	--则没有战报产生
+	-- 	return nil
+	-- end
 	self:nextStep(data)
 	self:reOrganizeData(self.report:getCurrentReport())
 	return self.report:getCurrentReport()
@@ -460,13 +463,13 @@ function BattleInfo:getCurrentFighter()
 	end
 	--判断当前人物是否可以操作
 	local actFighter = self.actionList[#self.actionList]
-	local isManipulate = false
-	if actFighter.sideType == constData.LEFTSIDE then
-		isManipulate = true
-	end
+	local isManipulate = actFighter.group:canManipulate()
 	--生成战报
-	self.report:currentFighter(actFighter,self.round_count,isManipulate,self.attackList,
-	self.defendList)
+	self.report:makeCurrentFighter(actFighter,--当前行动人物
+		isManipulate,--是否可以操作
+		self.round_count,--当前回合
+		self.attackGroup:getFighters(),--当前攻击组
+		self.defendGroup:getFighters())--当前防御组
 	return self.report:getCurrentReport()
 end
 

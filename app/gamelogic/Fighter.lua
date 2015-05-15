@@ -4,7 +4,7 @@ local SkillDefManager = DataManager.getManager("SkillDefManager")
 local Fighter = class("Fighter");
 --状态
 
-function Fighter:ctor(fighter)
+function Fighter:ctor(fighter,group)
 	self.name = fighter.name
 	self.fighterId = fighter.fighterId
 	--站位id
@@ -29,7 +29,8 @@ function Fighter:ctor(fighter)
 	--人物目标
 	self.target = nil;
 	--1 player 2 enemy
-	self.sideType = fighter.sideType;
+	self.group = group
+	self.sideType = fighter.sideType
 end
 
 function Fighter:clear()
@@ -69,31 +70,44 @@ end
 
 function Fighter:visitBuff(data)
 	local bi = 1
-	while bi <= (#self.BuffList) do
-		local tmp = {}
-		local isend,value 
-		if bi == 1 and #self.BuffList == 0 then
-            isend,value = self.BuffList[bi]:update()
-    		print("bi = "..bi)
-    		print("#self.BuffList="..#self.BuffList)
-    	else
-            isend,value = self.BuffList[bi]:update()
+	while bi <= #self.BuffList do
+		local isEnd,result = self.BuffList[bi]:update()
+		table.insert(data,result)
+		if self.BuffList[bi] ~= nil then
+			if isEnd then
+				self.BuffList[bi]:remove()
+				table.remove(self.BuffList,bi)
+				bi = bi - 1
+			end
+			
+			bi = bi + 1
+		else
+            if not self:isAlive() then
+                return false
+            end
 		end
-		tmp.fileId = self.BuffList[bi].fileId
-		tmp.value = value
-		table.insert(data,tmp)
-		 if isend then
-		 	self.BuffList[bi]:remove()
-		 	table.remove(self.BuffList,bi)
-		 	bi = bi - 1
-		 end
-		 if not self:isAlive() then
-		 	return false
-		 end
-		 bi = bi + 1
 	end
 
 	return true
+end
+
+function Fighter:visitControlBuff(data)
+	--能否行动
+	local act = true
+	local cbi = 1
+	while cbi <= #self.ControlBuffList do
+		local isEnd,result = self.ControlBuffList[cbi]:update()
+		table.insert(data,result)
+
+		 if isEnd then
+		 	self.ControlBuffList[cbi]:remove()
+		 	table.remove(self.ControlBuffList,cbi)
+		 	cbi = cbi - 1
+		 end
+		 cbi = cbi + 1
+		 act = false
+	end
+	return act
 end
 
 function Fighter:addBuff(buff)
@@ -116,28 +130,6 @@ end
 
 function Fighter:isEnemy(side)
 	return self.sideType ~= side
-end
-
-function Fighter:visitControlBuff(data)
-	--能否行动
-	local act = true
-	local cbi = 1
-	while cbi <= #self.ControlBuffList do
-		local tmp = {}
-		local isend,value = self.ControlBuffList[cbi]:update()
-		tmp.fileId = self.ControlBuffList[cbi].fileId
-		tmp.value = value
-		table.insert(data,tmp)
-
-		 if isend then
-		 	self.ControlBuffList[cbi]:remove()
-		 	table.remove(self.ControlBuffList,cbi)
-		 	cbi = cbi - 1
-		 end
-		 cbi = cbi + 1
-		 act = false
-	end
-	return act
 end
 
 function Fighter:updateSkillCD()

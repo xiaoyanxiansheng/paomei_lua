@@ -21,10 +21,9 @@ function UIHurt:playerWordUp(param,direction)
     local label = cc.ui.UILabel.new({
         text  = self.m_xue_word,
         size  = self.m_font_size,
-        align = cc.ui.TEXT_ALIGN_CENTER,
         color = self.m_word_color
     }):addTo(self)
-    
+    label:setAnchorPoint(0.5,0.5)
     local action    = cc.MoveBy:create      (self.m_time,self.m_pos)
     local func      = cc.CallFunc:create    (handler(self,self.func))
     local sequence  = transition.sequence   ({action,func})

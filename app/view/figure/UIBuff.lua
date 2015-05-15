@@ -30,10 +30,10 @@ end
 function UIBuff:getEffectSourceName()
 local effectConfig = {
         [0]   = "0",
-        [101] = "4002_buff",
-        [105] = "4001_buff",
+        [101] = "4001_buff",
+        [105] = "4002_buff",
         [103] = "4001_buff",
-        [108] = "4001_buff",}
+        [108] = "4002_buff",}
     return effectConfig[self:getBuffId()]
 end
 

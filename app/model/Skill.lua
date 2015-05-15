@@ -139,7 +139,7 @@ function Skill:getSkillResourceInfo()
         --]]
         -- end --
         [10001] = {isCSb = 0,skillName = "0",skillEffect="0",skillType = 1,discription = "单体攻击"},
-        [10002] = {isCSb = 0,skillName = "2002_skill",skillEffect="2002_skill_effect",skillType = 1,discription = "单体攻击,中毒"},
+        [10002] = {isCSb = 0,skillName = "2001_skill",skillEffect="2001_skill_effect",skillType = 1,discription = "单体攻击,中毒"},
         [10003] = {isCSb = 1,skillName = "2003_skill",skillEffect="2003_skill_effect",skillType = 2,discription = "全体，降功"},
         [10004] = {isCSb = 0,skillName = "2004_skill",skillEffect="0",skillType = 2,discription = "全体回血"},
         [10005] = {isCSb = 0,skillName = "2002_skill",skillEffect="2002_skill_effect",skillType = 1,discription = "单体眩晕"},
@@ -188,7 +188,7 @@ function Skill:getSkillMovePos()
     if skillRange == 1 then
         return false
     elseif skillRange == 2 then
-    	moveTo = cc.p(6,3)
+    	moveTo = cc.p(display.cx,display.cy)
     elseif skillRange == 3 then
     	moveTo = cc.p(0,0)
     elseif skillRange == 4 then

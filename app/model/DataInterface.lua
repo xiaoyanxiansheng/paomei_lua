@@ -8,25 +8,32 @@ end
 
 -- 获取当前运动玩家对象
 function DataInterface:fetchPlayerInfo()
-    return  self.Bi:getCurrentFighter()
+    local test = self.Bi:getCurrentFighter()
+    print("============ info ============")
+    dump(test)
+    return  test
     --self:testPlayerInfo()
 end
 -- 获取数据报信息
 function DataInterface:fetchReport(type,param)
-    local fetch = self.Bi:fetchReport(type,param)
-    
-    print("======================== attaker ======================")
-    dump(fetch[DATAFLOW.attaker])
-    print("======================== target ======================")
-    for key, var in pairs(fetch[DATAFLOW.target]) do
-        dump(var)
+    local test = self.Bi:fetchReport(type,param)
+    print("============ attacker ============")
+    dump(test[DATAFLOW.attaker])
+    print("============ target ============")
+    if test[DATAFLOW.target] then
+        for key, var in pairs(test[DATAFLOW.target]) do
+            dump(var)
+        end
     end
-    return fetch
+    
+    return test
         --self:testFetchReport(type,param)
 end
 -- 获取初始位置信息
 function DataInterface:fetchInitPosition()
-    return self.Bi:startBattle()
+    local test = self.Bi:startBattle()
+    
+    return test
     --self:testFetchInitPosition()
 end
 function DataInterface:isGameOver()

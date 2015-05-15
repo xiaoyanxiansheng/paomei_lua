@@ -27,19 +27,21 @@ end
 	false 状态继续
 ]]
 function Buff:update()
-	local value = 0
+	local tmp = {}
+	tmp.value = 0
+	tmp.fileId = self.fileId
 	self.delay = self.delay - 1
 	if self.delay <= 0 then
 		self.delay = self.interval
 		if self.hurtCallBack ~= nil then
-			value = self.hurtCallBack()
+			tmp.value = self.hurtCallBack()
 		end
 		self.duration = self.duration - 1
 	end
 	if self.duration <= 0 then
-		return true,value
+		return true,tmp
 	end
-	return false,value
+	return false,tmp
 end
 
 function Buff:remove()

@@ -6,7 +6,7 @@ function BuffController:ctor()
     
     self:init()
 end
-function BuffController:init() 
+function BuffController:init()
 end
 
 function BuffController:addBuff(nodeController,buffId)

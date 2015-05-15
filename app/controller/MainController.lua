@@ -84,10 +84,16 @@ function MainController:exeCount()
     
     -- 执行count之前的准备工作
     self:preZhunbei(figureInfo)
-
+    
+    -- 如果当前行动角色是死亡状态(目前有问题)
+    if not figureInfo[DATAFLOW.attaker][DATAFLOW.isAlive] then
+        self:figureDie()
+    	return
+    end
+    
     if not figureInfo[DATAFLOW.attaker][DATAFLOW.isManipulate] or self:isTuoguan() then
     
-        -- 执行数据流(1代表请求自动数据)
+        -- 执行数据流(0代表请求自动数据)
         self:ExeDataflow(1)
     elseif figureInfo.figureNum==-1 then
         -- 特殊指令
@@ -100,32 +106,68 @@ function MainController:exeCount()
         self:setPlayerWait(true)
     end
 end
+function MainController:figureDie()
+    local dataReport = self:getMainScene():getDataInterface():fetchReport(1)
+    self:exeCount()
+end
 function MainController:preZhunbei(figureInfo)
-    
-    
-    local info = figureInfo[DATAFLOW.info]
+
     local roundCount = figureInfo[DATAFLOW.attaker].roundCount
+    local info = figureInfo[DATAFLOW.info]
+    local skills = figureInfo[DATAFLOW.attaker].skills
     local figureNum = figureInfo[DATAFLOW.attaker][DATAFLOW.figureNum]
-    -- count开始前的当前信息设置
+    
+    -- 当前运动玩家num设置
+    self:setActionFigureNum("figureNum: "..figureNum)
+    
+    -- 角色信息设置
     self:initFigureInfoNow(info)
-    -- 回合设置
-    self:setRoundInfo(roundCount)
-    -- 当前攻击者id
-    self:setFigureNumUI({[DATAFLOW.figureNum]=figureNum})
+
     -- 默认普通攻击(这个地方有问题)
     self:setSkillId(10001)
-    -- 选择的攻击目标为空
+    
+    -- 选择的攻击目标索引为空
     self.m_tong_index = 0
     
+    -- 回合设置
+    self:setRoundInfo(roundCount)
+    
+    -- 技能冷却
+    self:skillRoundCool(skills)
+end
+function MainController:skillRoundCool(skills)
+
+    local buutonList = self:getSkillButtonList()
+    local skilllabelinfolist = {}
+    for key, var in pairs(skills) do
+        -- button
+        local button = buutonList[key]        
+        button:setVisible(true)
+        button:setTag(var.id)
+        button:setEnabled(true)
+        -- label
+        local labelskillid = var[DATAFLOW.id]
+        local labelisCoolDown = "可用"
+
+        if not var[DATAFLOW.isCoolDown] then
+            labelisCoolDown = "冷却中"
+            -- 不可以点击
+            button:setEnabled(false)
+        end
+
+        table.insert(skilllabelinfolist,labelskillid.."\r\n"..labelisCoolDown)
+    end
+    -- label
+    self:getMainScene():setSkillLabelList(skilllabelinfolist)
 end
 -- 执行正常流(包括数据请求和运行流程)
 function MainController:ExeDataflow(type,param)
     
     -- 获取的战报
     local dataReport = self:getMainScene():getDataInterface():fetchReport(type,param)
-    -- 技能攻击次数
-    local skillcount = 1
-    self:getFigureByFigureNum(dataReport[DATAFLOW.attaker][1][DATAFLOW.figureNum]):setSkillParam(dataReport[DATAFLOW.skillid],skillcount)
+    -- 给攻击者配置技能
+    local count = 1
+    self:getFigureByFigureNum(dataReport[DATAFLOW.attaker][1][DATAFLOW.figureNum]):setSkillParam(dataReport[DATAFLOW.skillid],count)
 
     if not self:getDataflowController() then
         -- 初始化数据报解析控制器
@@ -155,34 +197,11 @@ end
 function MainController:changeGameUI(skills)
     -- 添加延时等待
     self:getMainScene():setDelayTimeLabel(self:getOprateDelayTime())
-    
-    local buutonList = self:getSkillButtonList()
-    local skilllabelinfolist = {}
-    for key, var in pairs(skills) do
-        -- button
-        local button = buutonList[key]        
-        button:setVisible(true)
-        button:setTag(var.id)
-        button:setEnabled(true)
-        -- label
-        local labelskillid = var[DATAFLOW.id]
-        local labelisCoolDown = "可用"
-        
-        
-        if not var[DATAFLOW.isCoolDown] then
-            labelisCoolDown = "冷却中"
-        	-- 不可以点击
-            self:isSkillCollDwon(button)
-        end
-        
-        table.insert(skilllabelinfolist,labelskillid.."\r\n"..labelisCoolDown)
-    end
-    -- label
-    self:getMainScene():setSkillLabelList(skilllabelinfolist)
+
 end
-function MainController:isSkillCollDwon(node)
-    node:setEnabled(false)
-end
+--function MainController:isSkillCollDwon(node)
+--    node:setEnabled(false)
+--end
 function MainController:sendButtonIndex(node,index)
     -- 设置技能id
     if index == 1 then
@@ -222,9 +241,7 @@ function MainController:initPlayerAndController(figurePositionList)
             -- 得到主控制器
             figureController:setMainController(self)
             -- 在场景中添加实体
-            -- test
-            local pos = cc.p(self:getPointPosition()[k].x,self:getPointPosition()[k].y-0.5)
-            figureController:addFigureToNode(self:getMainScene(),pos)
+            figureController:addFigureToNode(self:getMainScene(),k)
             -- 实体属性设置
             figureController:configAttribute(var)
             self:addFigureController(figureController)
@@ -283,14 +300,13 @@ function MainController:pre()
     self.m_texture = TextureController.new()
 
     -- 加载技能缓存
-    local skillids = {2002,2003,2004}
+    local skillids = {2001,2002,2003,2004}
     for key, var in pairs(skillids) do
         self.m_texture:preSkill(var)
     end
     
     -- 加载buff
     local buffList = {4001,4002}
-
     for key, var in pairs(buffList) do
         self.m_texture:preBuff(var)
     end
@@ -353,20 +369,18 @@ function MainController:getMoveAndTime(attackerController,targetController)
     local skill_report = self:getDataflowController():getDataflow():getDataflow_move_attack()
     local skill_config_moveTo = attackerController:getSkillController():getSkillMovePos()
     
-    local move_point    = nil  
+    local move_pos    = nil  
     local move_time     = nil                                     
     -- 是否有move点
     if not skill_config_moveTo then
-        move_point = self:getMovePosition(attackerController,targetController)
+        move_pos = self:getMovePosition(attackerController,targetController)
     elseif skill_config_moveTo.x == 0 and skill_config_moveTo.y == 0 then
-        move_point = attackerController:getPointPosition()
+        move_pos = attackerController:getPosition()
     else
-        move_point = skill_config_moveTo
+        move_pos = skill_config_moveTo
     end
     -- 移动时间
-    move_time  = self:getMoveTime(attackerController,targetController,move_point)
-    -- 移动位置
-    local move_pos = self:pointToPos(move_point)           
+    move_time  = self:getMoveTime(attackerController,targetController,move_pos)        
     
     return {movePos = move_pos,moveTime=move_time}
 end
@@ -378,25 +392,25 @@ function MainController:setDelayTimeUIDefault()
 end
 -- 通过target返回attacker将要移动到的位置
 function MainController:getMovePosition(attackerController,targetController)
-    local pos_point = targetController:getPointPosition()
-    local point = {}
+    -- local pos_attacker = attackerController:getPosition()
+    local pos_target = targetController:getPosition()
+    local toPos = {}
     -- 方向判断
     if targetController:getDirection()==1 then
-        point.x = pos_point.x+1
+        toPos = cc.p(pos_target.x+100,pos_target.y)
     else
-        point.x = pos_point.x-1
+        toPos = cc.p(pos_target.x-100,pos_target.y)
     end
-    point.y = pos_point.y
 
-    return point
+    return toPos
 end
 -- 返回将要移动到的位置的时间
-function MainController:getMoveTime(attackerController,targetController,moveTo)
+function MainController:getMoveTime(attackerController,targetController,moveBy)
     
     -- 移动速度
     local speed = 10
     -- 两点距离
-    local distance = self:getDistanceByNode(attackerController:getPointPosition(),moveTo)
+    local distance = self:getDistanceByNode(attackerController:getPosition(),moveBy)
     --时间
     local time = distance/(speed*60)
     
@@ -411,26 +425,9 @@ function MainController:getMoveTime(attackerController,targetController,moveTo)
     end
     return time
 end
--- 返回技能的移动时间
---function MainController:getMoveTimeSkill(attackerController,targetController)
---    -- 技能激动速度
---    local speed = 20
---    local distance = self:getDistanceByNode(attackerController:getPointPosition(),targetController:getPointPosition())
---    return distance/(speed*60)
---end
 -- 设置技能描述
 function MainController:setSkillDiscription(discreption)   
-    self:getMainScene():getDiscriptionUI():playerWordUp({word = discreption,time=2,color=cc.c3b(222,222,222)},1)
-end
------------ 算法1 返回位置(根据点坐标算出具体坐标)  --------
-function MainController:pointToPos(point)
-    local width = display.width/12
-    local height = display.height/6
-
-    local x = (point.x - 1/2)*width
-    local y = (point.y - 1/2)*height
-    
-    return cc.p(x,y)
+    self:getMainScene():getDiscriptionUI():playerWordUp({word = discreption,time=2,color=cc.c3b(0,67,67)},1)
 end
 ------------------- 算法2 ：通过num求得实体  ---------------
 function MainController:getFigureByFigureNum(figureNum)
@@ -443,28 +440,19 @@ function MainController:getFigureByFigureNum(figureNum)
     return false
 end
 ---------------------- 算法3：得到两个node之间的距离  ----------
-function MainController:getDistanceByNode(point1,point2)
-    
-    local pos1 = self:pointToPos(point1)
-    local pos2 = self:pointToPos(point2)
-    
-    return math.sqrt((pos1.x-pos2.x)*(pos1.x-pos2.x)+(pos1.y-pos2.y)*(pos1.y-pos2.y))
+function MainController:getDistanceByNode(pos1,pos2)   
+    return self:getDistanceByNodeSubPos(cc.pSub(pos1,pos2))
 end
 function MainController:getDistanceByNodeSubPos(pos)
     return math.sqrt(pos.x*pos.x+pos.y*pos.y)
 end
 --------------- get set add -------------------
-function MainController:addFigure()
-    -- 得到数据
-    for key, varController in pairs(self:getFigureControllerList()) do       
-        varController:addFigureToNode(self:getMainScene(),self:getPointPosition()[key])
-    end
-end
 
 -- 索引和点坐标的转化关系
-function MainController:getPointPosition()
+function MainController:getPointPosition(point)
     local point_position = {cc.p(2,1),cc.p(2,3),cc.p(2,5),cc.p(4,2),cc.p(4,4),cc.p(4,6),cc.p(9,2),cc.p(9,4),cc.p(9,6),cc.p(11,1),cc.p(11,3),cc.p(11,5),}
-    return point_position
+    local point_position_test = {cc.p(150,182),cc.p(206,300),cc.p(266,417),cc.p(268,182),cc.p(324,300),cc.p(382,417),cc.p(704,182),cc.p(640,300),cc.p(546,417),cc.p(832,182),cc.p(771,300),cc.p(712,417)}
+    return point_position_test[point]
 end
 -- 得到主界面
 function MainController:getMainScene()
@@ -540,7 +528,7 @@ end
 function MainController:getSkillButtonList()
     return self:getMainScene():getSkillButtonList()
 end
-function MainController:setFigureNumUI(param)
-    self:getMainScene():setFigureNumUI(param)
+function MainController:setActionFigureNum(str)
+    self:getMainScene():setActionFigureNum(str)
 end
 return MainController

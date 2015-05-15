@@ -81,23 +81,24 @@ function DataflowController:statJudgment()
 
     -- 得到状态数据
     local state_list = self:getDataflow():getDataflow_state()
-    
+    local isAlive = state_list[DATAFLOW.isAlive]
     -- 得到实体控制器
     local figureController = self:getMainSceneController():getFigureByFigureNum(state_list[DATAFLOW.attaker])
       
     -- 状态全部完成
-    if table.maxn(state_list.state) == 0 then
-        local isAlive = {[DATAFLOW.attackerController]=figureController,[DATAFLOW.isAlive]=state_list[DATAFLOW.isAlive]}
-        self:statJudgmentFunc(isAlive)
-    	return 
-    end
+--    if table.maxn(state_list.state) == 0 then
+--        local isAliveInfo = {[DATAFLOW.attackerController]=figureController,[DATAFLOW.isAlive]=isAlive}
+--
+--        self:statJudgmentFunc(isAliveInfo)
+--    	return 
+--    end
     
     -- 状态执行之前清空状态列表
     figureController:getBuffController():removeAllBuff()
     -- 一个状态后的回调函数
+    local isAliveInfo = {[DATAFLOW.attackerController]=figureController,[DATAFLOW.isAlive]=isAlive}
     local finishFunc = handler(self,self.statJudgmentFunc)
-    -- 执行状态
-    figureController:stateJudgment({data = state_list.state,finishFunc = finishFunc})
+    figureController:stateJudgment({data = state_list.state,finishFunc = finishFunc,isAliveInfo = isAliveInfo})
 end
 
 -- 2.结合move和attack函数（结合函数模板）
@@ -154,11 +155,13 @@ function DataflowController:back()
     local distance = attackController:getDistanceFromOrigin().distance
     local time = distance/attackController:getMoveSpeed()
     local action = cc.MoveBy:create(time,subPos)
+    -- 人物反向
+    local func1 = cc.CallFunc:create(function()self:backAfter(attackController,subPos)end)
     
     -- 回来后
-    local func = cc.CallFunc:create(function()self:executionOverFunc(attackController,subPos)end)
+    local func2 = cc.CallFunc:create(function()self:executionOverFunc(attackController)end)
 
-    local sequence = cc.Sequence:create(backFunc,action,func)
+    local sequence = cc.Sequence:create(backFunc,action,func1,func2)
     
     self:ExeBack(attackController,sequence)
 end
@@ -286,14 +289,20 @@ function DataflowController:ExeBack(attackController,sequence)
 end
 --------------------------- 回调  --------------------------------
 -- 状态判断全部完成的回调函数
-function DataflowController:statJudgmentFunc(isAlive)
+function DataflowController:statJudgmentFunc(isAliveInfo)
     self:setCountWait(false)
     -- 攻击者是否死亡死亡
-    if not isAlive then
-        return
+    if isAliveInfo[DATAFLOW.isAlive] then
+    	return
     end
-    local figurenuminfolist = {{[DATAFLOW.figureNum]=isAlive[DATAFLOW.attackerController]:getFigureNum(),[DATAFLOW.isAlive]=isAlive.isAlive}}
-    self:dieJudgment(figurenuminfolist)
+    -- 跳过直接执行返回函数
+    local figureController = isAliveInfo[DATAFLOW.attackerController]
+    print(figureController:getFigureNum().."===========================状态死亡========================")
+    figureController:die()
+    self:executionOverFunc(figureController)
+    -- self:setFunctionIndex(#self:getFunctionList())
+--    local figurenuminfolist = {{[DATAFLOW.figureNum]=isAlive[DATAFLOW.attackerController]:getFigureNum(),[DATAFLOW.isAlive]=isAlive.isAlive}}
+    -- self:dieJudgment(figurenuminfolist)
 end
 
 -- 死亡判断
@@ -348,6 +357,11 @@ end
 function DataflowController:backFunc(attackerController)
     attackerController:back()
 end
+-- 返回后
+function DataflowController:backAfter(attackController,subPos)
+    -- 人物反向
+    attackController:setFigureRevese(subPos)
+end
 -- 受伤回调
 function DataflowController:attackHurtFunc(param)
     
@@ -370,9 +384,7 @@ function DataflowController:attackHurtFunc(param)
 end
 
 -- 一次完整的count
-function DataflowController:executionOverFunc(attackController,subPos)
-    -- 人物反向
-    attackController:setFigureRevese(subPos)
+function DataflowController:executionOverFunc(attackController)
     -- 重置所有
     self:backDefault(attackController)
     -- 再次请求一次count

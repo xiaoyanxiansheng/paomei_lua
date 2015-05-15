@@ -5,28 +5,6 @@ function FighterAttr:ctor(atr)
     self.agi = atr.agi;
     self.hp = atr.hp;
     self.cd = atr.cd;
-    
-    getmetatable(self).__add = function(lhs,rhs)
-		if instanceof(lhs,rhs) then
-			self.atk = self.atk + rhs.atk;
-			self.def = self.def + rhs.def;
-			self.agi = self.agi + rhs.agi;
-			self.hp = self.hp + rhs.hp;
-			self.cd = self.cd + rhs.cd;
-		end
-		return self
-	end
-
-	getmetatable(self).__mul  = function(lhs,rhs)
-		if instanceof(lhs,rhs) then
-			self.atk = self.atk * rhs.atk;
-			self.def = self.def * rhs.def;
-			self.agi = self.agi * rhs.agi;
-			self.hp = self.hp * rhs.hp;
-			self.cd = self.cd + rhs.cd;
-		end
-		return self
-	end
 
 end
 

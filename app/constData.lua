@@ -8,11 +8,7 @@ module(moduleName,package.seeall)
  RIGHTSIDE = -1
 --技能状态
 READY = 0
---状态
- NORMAL = 1
- DEAD = 2
- DIZZY = 3
- SLEEP = 4
+
  --技能effectType
  DIRECTLYHURT=1
  DIRECTLYHEAL=2
@@ -22,7 +18,12 @@ READY = 0
  CURSE=6
  REBIRTH=7
  DIRECTLYDEAD=8
-
+ 
+--状态
+ NORMAL = 1
+ DEAD = 2
+ DIZZY = 3
+ SLEEP = 4
 statusType = {
 [1] = "normal",--正常
 [2] = "dead",--死亡
@@ -73,3 +74,4 @@ ATTACKER_WIN = 1
 DEFENDER_WIN = 2
 CONTINUE = 3
 ROUND_OUT = 4
+

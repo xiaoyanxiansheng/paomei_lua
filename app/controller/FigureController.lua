@@ -79,7 +79,7 @@ end
 function FigureController:stateJudgment(param)
     
     if #param.data == 0 then
-    	param.finishFunc()
+        param.finishFunc(param.isAliveInfo)
     	return
     end
     
@@ -164,12 +164,7 @@ end
 function FigureController:addFigureToNode(node,point)
 
     node:addChild(self:getFigure())
-    
-    local pos = self:getMainController():pointToPos(point)
-    -- 具体位置
-    self:getFigure():setPosition(pos.x,pos.y)
-    -- 点坐标
-    self:getFigure():setPointPosition(point)
+    self:setPointPos(point)
 end
 function FigureController:getFigure()
     return self.m_figure
@@ -178,30 +173,35 @@ end
 function FigureController:getFigureBoundingBox()
     return self:getFigure():getBoundingBox()
 end
--- 设置点坐标
-function FigureController:setPointPosition(point)
-    self:getFigure():setPointPosition(point)
+-- 点
+function FigureController:getPointPos()
+    return self.m_pointPos
 end
--- 得到点坐标
-function FigureController:getPointPosition()
-    return self:getFigure():getPointPosition()
+function FigureController:setPointPos(point)
+    if not self.m_m_pointPos then
+    	self.m_m_pointPos = point
+    end
+    self.m_pointPos = point
+    self:setPosition(self:getMainController():getPointPosition(point))
 end
--- 得到默认位置
-function FigureController:getPointPosition_m()
-    return self:getFigure():getPointPosition_m()
+function FigureController:getPointPosM()
+    return self.m_m_pointPos
+end
+-- 具体坐标
+function FigureController:setPosition(pos)
+    self:getFigure():setPosition(pos)
+end
+function FigureController:getPosition()
+    return cc.p(self:getFigure():getPosition())
 end
 -- 当前到原点的距离
 function FigureController:getDistanceFromOrigin()
     
     local from = self:getPosition()
-    local to = self:getMainController():pointToPos(self:getPointPosition_m())    
+    local to = self:getMainController():getPointPosition(self:getPointPosM()) 
     local subPos = cc.pSub(to,from)
     local distance = math.sqrt(subPos.x*subPos.x+subPos.y*subPos.y)
     return {subPos=subPos,distance=distance}
-end
-function FigureController:getPosition()
-    local pos = cc.p(self:getFigure():getPosition())
-    return pos
 end
 -- 人物反向
 function FigureController:setFigureRevese(subPos)
